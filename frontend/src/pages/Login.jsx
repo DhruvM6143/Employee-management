@@ -71,6 +71,9 @@ const Login = ({ loading }) => {
                     }
                 }
             }
+            else {
+                toast.error("Please fill all the required fields correctly")
+            }
         } catch (error) {
             console.log(error);
             toast.error(error.message)
