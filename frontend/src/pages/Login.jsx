@@ -128,19 +128,21 @@ const Login = ({ loading }) => {
                                 className='w-full px-3 py-2 border border-gray-800'
                                 required
                             />
-                            {!isPasswordValid && (
-                                <p style={{ color: 'red' }}>
-                                    Password must be at least 8 characters long, with at least one uppercase letter, one lowercase letter, one number, and one special character.
-                                </p>
-                            )}
+
                             <button
                                 type="button"
                                 className='absolute right-3 top-1/2 transform -translate-y-1/2' // Positioning the eye icon
                                 onClick={() => setShowPassword((prev) => !prev)}
                             >
-                                <img className='w-[23px]' src={showPassword ? assets.eye : assets.hidden} alt="Toggle password visibility" />
+                                <img className='w-[23px] ' src={showPassword ? assets.eye : assets.hidden} alt="Toggle password visibility" />
                             </button>
+
                         </div>
+                        {!isPasswordValid && (
+                            <p style={{ color: 'red' }}>
+                                Password must be at least 8 characters long, with at least one uppercase letter, one lowercase letter, one number, and one special character.
+                            </p>
+                        )}
                         <div className='w-full flex justify-between text-sm mt-[-9px]'>
                             <p className='cursor-pointer'>Forgot your password?</p>
                             {curr === 'Login' ? (
