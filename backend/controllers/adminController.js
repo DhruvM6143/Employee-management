@@ -74,35 +74,31 @@ export const adminSignup = async (req, res) => {
     }
 }
 export const adminLogin = async (req, res) => {
-    const { email, password } = req.body
+    const { email, password } = req.body;
     try {
         if (!email || !password) {
-            return res.status(400).json({ message: 'All fields are required', success: false })
+            return res.status(400).json({ message: 'All fields are required', success: false });
         }
-        const existingUser = await user.findOne({ f_Email: email })
+
+        const existingUser = await user.findOne({ f_Email: email });
         if (!existingUser) {
-            return res.status(404).json({ message: 'User not found', success: false })
+            return res.status(404).json({ message: 'User not found', success: false });
         }
-        const isMatched = await bcrypt.compare(password, existingUser.f_Pwd)
+
+        const isMatched = await bcrypt.compare(password, existingUser.f_Pwd);
         if (!isMatched) {
-            return res.status(404).json({ message: 'Invalid password', success: false })
+            return res.status(401).json({ message: 'Invalid password', success: false }); // 401 for invalid credentials
         }
 
-        const token = createToken(existingUser._id)
-        return res.status(200).json({
-            success: true,
-            token,
-            existingUser,
-            message: 'User logged in successfully'
-        })
+        // Proceed to generate token and send successful login response
+        const token = createToken(existingUser._id); // Assuming generateToken is a function that creates a token
+        res.status(200).json({ token, existingUser, success: true });
     } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: 'Server Error', success: false })
-
-
+        console.error(error);
+        res.status(500).json({ message: 'Server error. Please try again later.', success: false });
     }
+};
 
-}
 export const createEmployee = async (req, res) => {
 
     const { email, phone, designation, gender, course, name } = req.body;
@@ -117,7 +113,7 @@ export const createEmployee = async (req, res) => {
         const image = req.files.image && req.files.image[0];
         const existingEmployee = await Employee.findOne({ f_Email: email })
         if (existingEmployee) {
-            return res.status(400).json({ message: 'Email already exists', success: false })
+            return res.status(409).json({ message: 'Email already exists', success: false })
         }
         if (image) {
             let result = await cloudinary.uploader.upload(image.path, { resource_type: 'image' })
@@ -135,10 +131,18 @@ export const createEmployee = async (req, res) => {
 
 
         await newEmployee.save()
-        res.status(200).json({ message: 'Employee created Successfully', success: true, newEmployee })
+        res.status(201).json({ message: 'Employee created Successfully', success: true, newEmployee })
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: 'Server Error', success: false })
+        if (error.message.includes("validation failed")) {
+            return res.status(400).json({ message: 'Validation error in input fields', success: false });
+        }
+        if (error.code === 'ENOTFOUND') { // Handling specific server errors
+            return res.status(503).json({ message: 'External service unavailable', success: false });
+        }
+
+        return res.status(500).json({ message: 'Server error', success: false });
+
     }
 }
 
@@ -215,6 +219,48 @@ export const getAdminDetails = async (req, res) => {
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: 'Server Error', success: false })
+
+    }
+}
+
+
+export const paginatedEmployee = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page)
+        const limit = parseInt(req.query.limit)
+
+        const employees = await Employee.find({})
+        const startIndex = (page - 1) * limit
+        const lastIndex = (page) * limit
+
+        const results = {}
+        results.totalUsers = employees.length
+        results.pageCount = Math.ceil(employees.length / limit)
+
+        if (lastIndex < employees.length) {
+            results.next = {
+                page: page + 1,
+                limit
+            }
+        }
+        if (startIndex > 0) {
+            results.prev = {
+                page: page - 1,
+                limit
+            }
+        }
+
+
+
+
+        results.result = employees.slice(startIndex, lastIndex)
+        res.json({ results, success: true })
+    } catch (error) {
+        console.log(error);
+        res.json({
+            message: 'Server Error',
+            success: false
+        })
 
     }
 }

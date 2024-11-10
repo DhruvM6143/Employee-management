@@ -78,12 +78,25 @@ const CreateEmployee = ({ loading }) => {
                 }
 
             } catch (error) {
-                console.log(error);
-                toast.error(error.message);
+                if (error.response) {
+                    const status = error.response.status;
+
+                    if (status === 400) {
+                        toast.error("All fields are required or input validation failed.");
+                    } else if (status === 409) {
+                        toast.error("This email already exists. Please use a different email.");
+                    } else if (status === 503) {
+                        toast.error("An external service is unavailable. Please try again later.");
+                    } else if (status === 500) {
+                        toast.error("A server error occurred. Please try again later.");
+                    } else {
+                        toast.error("An unexpected error occurred.");
+                    }
+                } else {
+                    console.error(error);
+                    toast.error("Network error or server is unreachable.");
+                }
             }
-        }
-        else {
-            toast.error("Please fill all the required fields correctly");
         }
     }
     const handleCourseChange = (e) => {

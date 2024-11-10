@@ -6,39 +6,35 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import SearchBar from '../components/SearchBar';
 import { assets } from '../assets/frontend_assets/assets';
+import ReactPaginate from 'react-paginate';
 
 const EmployeeList = ({ loading }) => {
-
-
     const { token, navigate, backendUrl, setToken } = useContext(ShopContext);
     const [employees, setEmployees] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageCount, setPageCount] = useState(0);
+    const [limit, setLimit] = useState(4);
     const [searchTerm, setSearchTerm] = useState('');
     const [show, setShow] = useState(false);
-    useEffect(() => {
-        const storedTOken = localStorage.getItem('token')
-        if (!storedTOken) {
-            navigate('/login')
-        }
-        else {
-            setToken(storedTOken);
 
+    useEffect(() => {
+        const storedToken = localStorage.getItem('token');
+        if (!storedToken) {
+            navigate('/login');
+        } else {
+            setToken(storedToken);
         }
     }, [token, setToken]);
 
-    const filteredEmployee = searchTerm
-        ? employees.filter((employee) =>
-            employee.f_Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            employee.f_Email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            String(employee.f_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
-            employee.f_Designation.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        : employees;
-
-    const fetchEmployees = async () => {
+    const fetchEmployees = async (page = 1) => {
         try {
-            const response = await axios.get(backendUrl + '/api/employee/list-employees', { headers: { token } });
+            const response = await axios.get(`${backendUrl}/api/employee/paginatedusers?page=${page}&limit=${limit}`, {
+                headers: { token }
+            });
             if (response.data.success) {
-                setEmployees(response.data.employee);
+                const { results } = response.data;
+                setEmployees(results.result);
+                setPageCount(results.pageCount);
             } else {
                 toast.error(response.data.message);
             }
@@ -47,14 +43,25 @@ const EmployeeList = ({ loading }) => {
             toast.error("Error fetching employees");
         }
     };
-
-
+    const filteredEmployee = searchTerm
+        ? employees.filter((employee) =>
+            employee.f_Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            employee.f_Email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            String(employee.f_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
+            employee.f_Designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            employee.f_Gender.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        : employees;
 
     useEffect(() => {
         if (token) {
-            fetchEmployees();
+            fetchEmployees(currentPage);
         }
-    }, [token]);
+    }, [token, currentPage]);
+
+    const handlePageClick = (data) => {
+        setCurrentPage(data.selected + 1);
+    };
 
     const handleEdit = (id) => {
         navigate(`/update-employee/${id}`);
@@ -65,7 +72,7 @@ const EmployeeList = ({ loading }) => {
             const response = await axios.delete(`${backendUrl}/api/employee/delete-employee/${id}`, { headers: { token } });
             if (response.data.success) {
                 toast.success("Employee deleted successfully");
-                fetchEmployees();
+                fetchEmployees(currentPage);
             } else {
                 toast.error("Error deleting employee");
             }
@@ -98,7 +105,7 @@ const EmployeeList = ({ loading }) => {
 
                     {/* Employee List Table for Desktop, Cards for Mobile */}
                     <div className="bg-white shadow-lg rounded-lg">
-                        <div className="hidden sm:grid grid-cols-[0.5fr_1fr_1fr_2fr_1fr_1fr_1fr_2fr_1fr_1fr] items-center py-3 px-4 border-b bg-gray-100 text-sm font-medium">
+                        <div className="hidden sm:grid grid-cols-[0.5fr_1fr_1fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr] items-center py-3 px-4 border-b bg-gray-100 text-sm font-medium">
                             <b>Unique Id</b>
                             <b>Image</b>
                             <b>Name</b>
@@ -111,9 +118,8 @@ const EmployeeList = ({ loading }) => {
                             <b className="text-right">Action</b>
                         </div>
 
-                        {/* Employee Cards for Mobile */}
                         {filteredEmployee.map((item, index) => (
-                            <div key={index} className="border-b sm:border-0 sm:grid sm:grid-cols-[0.5fr_1fr_1fr_2fr_1fr_1fr_1fr_2fr_1fr_1fr] items-center py-3 px-4 hover:bg-gray-50 text-sm flex flex-col sm:flex-row">
+                            <div key={index} className="border-b sm:border-0 sm:grid sm:grid-cols-[0.5fr_1fr_1fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr] items-center py-3 px-4 hover:bg-gray-50 text-sm flex flex-col sm:flex-row">
                                 <div className="flex sm:block">
                                     <p className="ml-2 sm:ml-0">{item.f_id}</p>
                                 </div>
@@ -142,22 +148,32 @@ const EmployeeList = ({ loading }) => {
                                     <p className="ml-2 sm:ml-0">{new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                                 </div>
                                 <div className="flex sm:justify-end space-x-2 mt-2 sm:mt-0">
-                                    <button
-                                        onClick={() => handleEdit(item._id)}
-                                        className="text-blue-500 hover:text-blue-700 text-sm">
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleRemove(item._id)}
-                                        className="text-red-500 hover:text-red-700 text-sm">
-                                        Remove
-                                    </button>
+                                    <button onClick={() => handleEdit(item._id)} className="text-blue-500 hover:text-blue-700 text-sm">Edit</button>
+                                    <button onClick={() => handleRemove(item._id)} className="text-red-500 hover:text-red-700 text-sm">Remove</button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
+            <ReactPaginate
+                breakLabel="..."
+                nextLabel="next >"
+                onPageChange={handlePageClick}
+                pageRangeDisplayed={5}
+                pageCount={pageCount}
+                previousLabel="< previous"
+                marginPagesDisplayed={2}
+                containerClassName="flex justify-center space-x-2 mt-4"
+                pageClassName="page-item"
+                pageLinkClassName="inline-block px-4 py-2 text-sm font-semibold text-black-500 border border-gray-300 rounded hover:bg-blue-100 hover:text-black-700 transition-colors"
+                previousClassName="page-item"
+                previousLinkClassName="inline-block px-4 py-2 text-sm font-semibold text-black-500 border border-gray-300 rounded hover:bg-blue-100 hover:text-black-700 transition-colors"
+                nextClassName="page-item"
+                nextLinkClassName="inline-block px-4 py-2 text-sm font-semibold text-black-500 border border-gray-300 rounded hover:bg-blue-100 hover:text-black-700 transition-colors"
+                activeClassName="bg-blue-500 text-white"
+                disabledClassName="text-gray-400 cursor-not-allowed"
+            />
         </div>
     );
 };

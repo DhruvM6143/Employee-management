@@ -75,8 +75,21 @@ const Login = ({ loading }) => {
                 toast.error("Please fill all the required fields correctly")
             }
         } catch (error) {
-            console.log(error);
-            toast.error(error.message)
+            if (error.response) {
+                const status = error.response.status;
+                if (status === 400) {
+                    toast.error("All fields are required.");
+                } else if (status === 404) {
+                    toast.error(error.response.data.message); // "User not found"
+                } else if (status === 401) {
+                    toast.error("Invalid password. Please try again.");
+                } else {
+                    toast.error("Something went wrong. Please try again later.");
+                }
+            } else {
+                console.error(error);
+                toast.error("Network error or server is unreachable.");
+            }
         }
     }
 
