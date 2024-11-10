@@ -11,6 +11,7 @@ import ReactPaginate from 'react-paginate';
 const EmployeeList = ({ loading }) => {
     const { token, navigate, backendUrl, setToken } = useContext(ShopContext);
     const [employees, setEmployees] = useState([]);
+    const [count, setCount] = useState(0)
     const [currentPage, setCurrentPage] = useState(1);
     const [pageCount, setPageCount] = useState(0);
     const [limit, setLimit] = useState(4);
@@ -34,6 +35,7 @@ const EmployeeList = ({ loading }) => {
             if (response.data.success) {
                 const { results } = response.data;
                 setEmployees(results.result);
+                setCount(results.totalEmployee);
                 setPageCount(results.pageCount);
             } else {
                 toast.error(response.data.message);
@@ -98,7 +100,7 @@ const EmployeeList = ({ loading }) => {
                             ) : (
                                 <img src={assets.search_icon} onClick={() => setShow(true)} className='w-5 cursor-pointer' alt="Search Icon" />
                             )}
-                            <p>Total Count: {employees.length}</p>
+                            <p>Total Count: {count}</p>
                             <button onClick={() => navigate('/create-employee')} className='w-[130px] py-3 bg-black text-white mx-auto rounded-md'>Create Employee</button>
                         </div>
                     </div>

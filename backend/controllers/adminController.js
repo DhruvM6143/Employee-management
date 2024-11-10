@@ -13,12 +13,12 @@ export const employeeDetail = async (req, res) => {
         const { id } = req.params;
         const employee = await Employee.findById(id)
         if (!employee) {
-            return res.status(400).json({ message: 'Employee not found', success: false })
+            return res.json({ message: 'Employee not found', success: false })
         }
-        res.status(200).json({ message: "Employee found", success: true, employee })
+        res.json({ message: "Employee found", success: true, employee })
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: 'Server Error', success: false })
+        return res.json({ message: 'Server Error', success: false })
 
     }
 }
@@ -30,14 +30,14 @@ export const adminSignup = async (req, res) => {
 
     try {
         if (!email && !password && !username) {
-            return res.status(400).json({ message: 'All fields are required', success: false })
+            return res.json({ message: 'All fields are required', success: false })
         }
         const existingUser = await user.findOne({ f_Email: email })
         if (existingUser) {
-            return res.status(400).json({ message: 'Email already exists', success: false })
+            return res.json({ message: 'Email already exists', success: false })
         }
         if (!validator.isEmail(email)) {
-            res.status(400).json({ message: 'Invalid Email', success: false })
+            res.json({ message: 'Invalid Email', success: false })
         }
         if (email.length > 30 && email.length < 5) {
             res.json({
@@ -61,7 +61,7 @@ export const adminSignup = async (req, res) => {
 
         const token = createToken(newUser._id)
         await newUser.save()
-        res.status(200).json({
+        res.json({
             success: true,
             token,
             newUser,
@@ -69,7 +69,7 @@ export const adminSignup = async (req, res) => {
         })
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: 'Server Error', success: false })
+        return res.json({ message: 'Server Error', success: false })
 
     }
 }
@@ -77,25 +77,25 @@ export const adminLogin = async (req, res) => {
     const { email, password } = req.body;
     try {
         if (!email || !password) {
-            return res.status(400).json({ message: 'All fields are required', success: false });
+            return res.json({ message: 'All fields are required', success: false });
         }
 
         const existingUser = await user.findOne({ f_Email: email });
         if (!existingUser) {
-            return res.status(404).json({ message: 'User not found', success: false });
+            return res.json({ message: 'User not found', success: false });
         }
 
         const isMatched = await bcrypt.compare(password, existingUser.f_Pwd);
         if (!isMatched) {
-            return res.status(401).json({ message: 'Invalid password', success: false }); // 401 for invalid credentials
+            return res.json({ message: 'Invalid password', success: false }); // 401 for invalid credentials
         }
 
         // Proceed to generate token and send successful login response
         const token = createToken(existingUser._id); // Assuming generateToken is a function that creates a token
-        res.status(200).json({ token, existingUser, success: true });
+        res.json({ token, existingUser, success: true });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error. Please try again later.', success: false });
+        res.json({ message: 'Server error. Please try again later.', success: false });
     }
 };
 
@@ -105,16 +105,24 @@ export const createEmployee = async (req, res) => {
 
     try {
         if (!email || !phone || !designation || !gender || !course || !name) {
-            return res.status(400).json({ message: 'All fields are required', success: false })
+            return res.json({ message: 'All fields are required', success: false })
         }
 
 
         let imageUrl = null;
+        if (!req.files.image) {
+            return res.json({ message: 'Please upload an image', success: false })
+        }
         const image = req.files.image && req.files.image[0];
         const existingEmployee = await Employee.findOne({ f_Email: email })
-        if (existingEmployee) {
-            return res.status(409).json({ message: 'Email already exists', success: false })
+        const existingEmployee2 = await Employee.findOne({ f_Mobile: phone })
+        if (existingEmployee2) {
+            return res.json({ message: 'Phone number  already exists', success: false })
         }
+        if (existingEmployee) {
+            return res.json({ message: 'Email already exists', success: false })
+        }
+
         if (image) {
             let result = await cloudinary.uploader.upload(image.path, { resource_type: 'image' })
             imageUrl = result.secure_url;
@@ -131,17 +139,17 @@ export const createEmployee = async (req, res) => {
 
 
         await newEmployee.save()
-        res.status(201).json({ message: 'Employee created Successfully', success: true, newEmployee })
+        res.json({ message: 'Employee created Successfully', success: true, newEmployee })
     } catch (error) {
         console.log(error);
         if (error.message.includes("validation failed")) {
-            return res.status(400).json({ message: 'Validation error in input fields', success: false });
+            return res.json({ message: 'Validation error in input fields', success: false });
         }
         if (error.code === 'ENOTFOUND') { // Handling specific server errors
-            return res.status(503).json({ message: 'External service unavailable', success: false });
+            return res.json({ message: 'External service unavailable', success: false });
         }
 
-        return res.status(500).json({ message: 'Server error', success: false });
+        return res.json({ message: 'Server error', success: false });
 
     }
 }
@@ -151,12 +159,12 @@ export const deleteEmployee = async (req, res) => {
         const { id } = req.params;
         const employee = await Employee.findByIdAndDelete(id);
         if (!employee) {
-            return res.status(404).json({ message: 'Employee not found', success: false });
+            return res.json({ message: 'Employee not found', success: false });
         }
         res.json({ success: true, message: 'Employee deleted successfully' });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: 'Server Error', success: false });
+        return res.json({ message: 'Server Error', success: false });
 
     }
 }
@@ -195,7 +203,7 @@ export const updateEmployee = async (req, res) => {
     } catch (error) {
         console.log(error);
         const errorMessage = error.name === 'ValidationError' ? error.message : 'Server Error';
-        return res.status(500).json({ message: errorMessage, success: false });
+        return res.json({ message: errorMessage, success: false });
 
     }
 }
@@ -207,7 +215,7 @@ export const getEmployees = async (req, res) => {
         res.json({ success: true, employee });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: 'Server Error', success: false });
+        return res.json({ message: 'Server Error', success: false });
 
     }
 }
@@ -218,7 +226,7 @@ export const getAdminDetails = async (req, res) => {
         res.json({ success: true, admin });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: 'Server Error', success: false })
+        return res.json({ message: 'Server Error', success: false })
 
     }
 }
@@ -230,10 +238,12 @@ export const paginatedEmployee = async (req, res) => {
         const limit = parseInt(req.query.limit)
 
         const employees = await Employee.find({})
+
         const startIndex = (page - 1) * limit
         const lastIndex = (page) * limit
 
         const results = {}
+        results.totalEmployee = employees.length
         results.totalUsers = employees.length
         results.pageCount = Math.ceil(employees.length / limit)
 

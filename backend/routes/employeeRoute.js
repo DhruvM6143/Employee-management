@@ -9,6 +9,6 @@ employeeRoute.delete('/delete-employee/:id', authUser, deleteEmployee)
 employeeRoute.post('/update-employee/:id', upload.fields([{ name: 'image', maxCount: 1 }]), authUser, updateEmployee)
 employeeRoute.get('/list-employees', authUser, getEmployees)
 employeeRoute.get('/employee/:id', authUser, employeeDetail)
-employeeRoute.get('/paginatedusers', paginatedEmployee)
+employeeRoute.get('/paginatedusers', authUser, paginatedEmployee)
 
 export default employeeRoute;

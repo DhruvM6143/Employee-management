@@ -113,12 +113,7 @@ const UpdateEmployee = ({ loading }) => {
 
             } catch (error) {
                 console.log(error);
-
-                if (error.response && error.response.data) {
-                    toast.error(error.response.data.message || "An error occurred");
-                } else {
-                    toast.error("Network error or invalid token.");
-                }
+                toast.error(error.message);
             }
         }
         else {
